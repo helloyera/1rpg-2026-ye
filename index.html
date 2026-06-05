@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인생 RPG — 퀘스트 본부</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F4F0;color:#1a1a1a;min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding:1rem;padding-bottom:90px}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:white;border-top:1px solid #e8e6e0;display:flex;z-index:100;padding:8px 0 12px}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:transparent;cursor:pointer;font-size:10px;color:#888;transition:color 0.15s}
+.nav-btn.active{color:#534AB7}
+.nav-btn i{font-size:20px}
+.screen{display:none}.screen.active{display:block}
+
+/* 카드 공통 */
+.card{background:white;border-radius:16px;padding:1.125rem 1.25rem;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.section-hd{font-size:11px;font-weight:600;color:#888;letter-spacing:0.06em;text-transform:uppercase;margin:1.25rem 0 8px;display:flex;align-items:center;justify-content:space-between}
+.section-hd-add{font-size:12px;color:#534AB7;cursor:pointer;font-weight:600;letter-spacing:0;text-transform:none;display:flex;align-items:center;gap:3px}
+.bar{height:8px;background:#F0EEF8;border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;transition:width 0.4s ease}
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+.badge-main{background:#FAEEDA;color:#412402}
+
+/* 캐릭터 카드 */
+.char-card{background:white;border-radius:16px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.char-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.avatar{width:52px;height:52px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.char-name{font-size:15px;font-weight:600}
+.char-sub{font-size:12px;color:#888;margin-top:2px}
+.total-xp-badge{margin-left:auto;background:#EEEDFE;color:#3C3489;font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;white-space:nowrap;text-align:center;line-height:1.4}
+
+/* 스탯 레벨 카드 */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.stat-lv-card{background:white;border-radius:14px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.slc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.slc-name{font-size:13px;font-weight:600;color:#1a1a1a}
+.slc-lv{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px}
+.slc-xp{font-size:11px;color:#888;margin-bottom:5px}
+.slc-bar{height:5px;background:#f0ede6;border-radius:99px;overflow:hidden}
+.slc-bar-fill{height:100%;border-radius:99px;transition:width 0.4s}
+
+/* 보상 */
+.reward-item{background:white;border-radius:14px;padding:1rem 1.25rem;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px}
+.reward-xp{font-size:13px;font-weight:700;color:#534AB7;min-width:52px}
+.reward-label{font-size:13px;color:#1a1a1a;flex:1}
+.reward-unlocked{background:#E1F5EE}
+.reward-unlocked .reward-xp{color:#1D9E75}
+.reward-unlocked .reward-label{font-weight:600;color:#04342C}
+.reward-check{color:#1D9E75;font-size:18px}
+.reward-next{border:2px solid #7F77DD}
+.reward-edit-btn{width:28px;height:28px;border:none;background:transparent;cursor:pointer;color:#bbb;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0}
+.reward-del-btn{width:28px;height:28px;border:none;background:transparent;cursor:pointer;color:#ffaaaa;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0}
+
+/* 데일리/주간 */
+.quest-list{background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:8px}
+.quest-row{display:flex;align-items:center;gap:12px;padding:13px 1.25rem;border-bottom:1px solid #f0ede6;transition:background 0.1s;cursor:pointer;user-select:none}
+.quest-row:last-child{border-bottom:none}
+.quest-row:active{background:#f8f7f4}
+.quest-row.done .quest-lbl{text-decoration:line-through;color:#bbb}
+.sq{width:24px;height:24px;border-radius:7px;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.sq.on{background:#1D9E75;border-color:#1D9E75}
+.quest-lbl{font-size:13px;color:#1a1a1a;flex:1;line-height:1.3}
+.quest-stat-tag{font-size:10px;font-weight:600;padding:2px 6px;border-radius:99px;background:#EEEDFE;color:#3C3489;margin-right:2px;white-space:nowrap}
+.quest-xp{font-size:12px;color:#534AB7;font-weight:600;margin-right:2px}
+.edit-btn{width:28px;height:28px;border:none;background:transparent;cursor:pointer;color:#bbb;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0}
+.edit-btn:active{background:#f0ede6}
+
+.weekly-card{background:white;border-radius:14px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:8px}
+.wc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.wc-title{font-size:13px;font-weight:500;color:#1a1a1a;flex:1;line-height:1.4}
+.wc-circle{width:24px;height:24px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;cursor:pointer}
+.wc-circle.on{background:#1D9E75;border-color:#1D9E75}
+.wc-meta{display:flex;align-items:center;gap:6px}
+.wc-xp{font-size:12px;color:#534AB7;font-weight:600}
+.wc-actions{display:flex;gap:6px;margin-top:8px;border-top:1px solid #f0ede6;padding-top:8px}
+.wc-act{flex:1;padding:5px;border:1px solid #e8e6e0;border-radius:8px;background:transparent;font-size:11px;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px}
+.wc-act.del{color:#E24B4A;border-color:#ffd0d0}
+
+.add-btn{width:100%;padding:0.75rem;background:transparent;border:1.5px dashed #ccc;border-radius:14px;color:#888;font-size:13px;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px}
+.add-btn:active{background:#f0ede6}
+
+.reset-note{font-size:11px;color:#aaa;text-align:center;margin-bottom:12px}
+.xp-row{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:5px}
+
+/* 기록/캘린더 */
+.cal-day{width:100%;aspect-ratio:1;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#1a1a1a;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:background 0.15s}
+.cal-day:hover{background:#f0ede6}
+.cal-day.today{font-weight:700;color:#534AB7}
+.cal-day.selected{background:#534AB7;color:white;font-weight:700}
+.cal-day.selected .cal-dot{background:white}
+.cal-day.empty{cursor:default}
+.cal-dot{width:5px;height:5px;border-radius:50%;background:#1D9E75}
+.cal-dot.weekly{background:#534AB7}
+.hist-item{background:white;border-radius:14px;padding:1rem 1.25rem;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+
+/* 모달 */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:white;border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-width:480px;transform:translateY(100%);transition:transform 0.25s ease}
+.modal-backdrop.open .modal{transform:translateY(0)}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:1.25rem}
+.modal label{font-size:12px;color:#888;display:block;margin-bottom:4px;margin-top:12px}
+.modal input[type=text],.modal input[type=number]{width:100%;padding:10px 12px;border:1.5px solid #e8e6e0;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color 0.15s}
+.modal input:focus{border-color:#7F77DD}
+.modal select{width:100%;padding:10px 12px;border:1.5px solid #e8e6e0;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:white}
+.modal-btns{display:flex;gap:8px;margin-top:1.25rem}
+.modal-btns .cancel{flex:1;padding:0.75rem;background:#f5f4f0;border:none;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:#888}
+.modal-btns .confirm{flex:2;padding:0.75rem;background:#534AB7;color:white;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.modal-del{width:100%;padding:0.625rem;background:transparent;border:1.5px solid #ffd0d0;border-radius:10px;color:#E24B4A;font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px}
+
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(60px);background:#3C3489;color:#CECBF6;font-size:13px;font-weight:500;padding:9px 20px;border-radius:99px;transition:transform 0.25s;pointer-events:none;white-space:nowrap;z-index:400;box-shadow:0 4px 16px rgba(83,74,183,0.3)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* 레벨업 팝업 */
+.levelup-pop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.levelup-pop.show{opacity:1;pointer-events:all}
+.levelup-box{background:white;border-radius:24px;padding:2rem 1.5rem;text-align:center;max-width:300px;width:90%;transform:scale(0.8);transition:transform 0.3s}
+.levelup-pop.show .levelup-box{transform:scale(1)}
+.levelup-emoji{font-size:48px;margin-bottom:12px}
+.levelup-title{font-size:22px;font-weight:700;color:#3C3489;margin-bottom:6px}
+.levelup-sub{font-size:14px;color:#888;margin-bottom:20px}
+.levelup-close{padding:10px 28px;background:#534AB7;color:white;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- 홈 -->
+<div id="screen-home" class="screen active">
+  <div class="char-card">
+    <div class="char-top">
+      <div class="avatar">🧙</div>
+      <div style="flex:1">
+        <div class="char-name">부동산 전문가 · 크리에이터</div>
+        <div class="char-sub">감정평가사 → 수익형 크리에이터</div>
+      </div>
+      <div class="total-xp-badge" id="h-total-xp">총 XP<br><span style="font-size:16px">0</span></div>
+    </div>
+    <div class="xp-row"><span>메인 퀘스트 진행도</span><span id="h-main-pct">0%</span></div>
+    <div class="bar"><div class="bar-fill" id="h-main-bar" style="background:#EF9F27"></div></div>
+  </div>
+
+  <div class="section-hd">스탯 레벨</div>
+  <div class="stat-grid" id="home-stat-grid"></div>
+
+  <div class="section-hd">오늘 데일리</div>
+  <div id="home-daily-wrap" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem"></div>
+
+  <div class="section-hd">다음 보상</div>
+  <div id="home-next-reward"></div>
+</div>
+
+<!-- 데일리 -->
+<div id="screen-daily" class="screen">
+  <div class="card" style="padding:1rem 1.25rem;margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;color:#888" id="daily-date-label">오늘</div>
+        <div style="font-size:15px;font-weight:600" id="daily-xp-today">0 / 0 XP 획득</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:#888">완료</div>
+        <div style="font-size:22px;font-weight:700" id="daily-count">0 / 0</div>
+      </div>
+    </div>
+  </div>
+  <div class="reset-note">매일 자정에 자동 초기화됩니다</div>
+  <div class="quest-list" id="daily-list"></div>
+  <button class="add-btn" onclick="openQuestModal('daily')"><i class="ti ti-plus"></i> 데일리 퀘스트 추가</button>
+</div>
+
+<!-- 주간 -->
+<div id="screen-weekly" class="screen">
+  <div class="card" style="padding:1rem 1.25rem;margin-bottom:1rem">
+    <div style="font-size:12px;color:#888;margin-bottom:4px" id="weekly-period-label">이번 주</div>
+    <div style="font-size:15px;font-weight:600" id="weekly-xp-info">주간 XP 0 획득</div>
+  </div>
+  <div class="reset-note">매주 월요일 자정에 자동 초기화됩니다</div>
+  <div id="weekly-list"></div>
+  <button class="add-btn" onclick="openQuestModal('weekly')"><i class="ti ti-plus"></i> 주간 퀘스트 추가</button>
+</div>
+
+<!-- 보상 -->
+<div id="screen-reward" class="screen">
+  <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem">
+    <div style="font-size:12px;color:#888;margin-bottom:2px">현재 총 XP</div>
+    <div style="font-size:24px;font-weight:700;color:#534AB7" id="reward-total-xp">0 XP</div>
+  </div>
+  <div class="section-hd">
+    <span>XP 보상 목록</span>
+    <span class="section-hd-add" onclick="openRewardModal()"><i class="ti ti-plus"></i> 추가</span>
+  </div>
+  <div id="reward-list"></div>
+</div>
+
+<!-- 기록 -->
+<div id="screen-history" class="screen">
+  <div class="card" style="margin-bottom:1rem;padding:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <button onclick="calMove(-1)" style="width:32px;height:32px;border:none;background:#f5f4f0;border-radius:8px;cursor:pointer;font-size:18px;line-height:1">‹</button>
+      <span style="font-size:15px;font-weight:600" id="cal-title"></span>
+      <button onclick="calMove(1)" style="width:32px;height:32px;border:none;background:#f5f4f0;border-radius:8px;cursor:pointer;font-size:18px;line-height:1">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">일</div>
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">월</div>
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">화</div>
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">수</div>
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">목</div>
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">금</div>
+      <div style="text-align:center;font-size:11px;color:#aaa;padding:3px">토</div>
+    </div>
+    <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+  </div>
+  <div id="cal-detail"></div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="show('home',this)"><i class="ti ti-home"></i>홈</button>
+  <button class="nav-btn" onclick="show('daily',this)"><i class="ti ti-sun"></i>데일리</button>
+  <button class="nav-btn" onclick="show('weekly',this)"><i class="ti ti-calendar"></i>주간</button>
+  <button class="nav-btn" onclick="show('reward',this)"><i class="ti ti-gift"></i>보상</button>
+  <button class="nav-btn" onclick="show('history',this)"><i class="ti ti-clock"></i>기록</button>
+</nav>
+</div>
+
+<!-- 퀘스트 추가/수정 모달 -->
+<div class="modal-backdrop" id="quest-modal">
+  <div class="modal">
+    <div class="modal-title" id="qm-title">퀘스트 추가</div>
+    <label>퀘스트 이름</label>
+    <input type="text" id="qm-label" placeholder="예: 부동산 뉴스 읽기">
+    <label>XP</label>
+    <input type="number" id="qm-xp" placeholder="10" min="1" max="500">
+    <label>관련 스탯</label>
+    <select id="qm-stat">
+      <option value="부">💰 부</option>
+      <option value="전문성">🏠 전문성</option>
+      <option value="영향력">📣 영향력</option>
+      <option value="바이탈">💪 바이탈</option>
+      <option value="언어">🌍 언어</option>
+      <option value="소셜">❤️ 소셜</option>
+    </select>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal('quest-modal')">취소</button>
+      <button class="confirm" onclick="confirmQuestModal()">저장</button>
+    </div>
+    <button class="modal-del" id="qm-del-btn" onclick="deleteQuest()" style="display:none">삭제</button>
+  </div>
+</div>
+
+<!-- 보상 추가/수정 모달 -->
+<div class="modal-backdrop" id="reward-modal-bg">
+  <div class="modal">
+    <div class="modal-title" id="rm-title">보상 추가</div>
+    <label>필요 XP</label>
+    <input type="number" id="rm-xp" placeholder="예: 1000" min="1">
+    <label>보상 내용</label>
+    <input type="text" id="rm-label" placeholder="예: 호캉스 가기 🏨">
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal('reward-modal-bg')">취소</button>
+      <button class="confirm" onclick="confirmRewardModal()">저장</button>
+    </div>
+    <button class="modal-del" id="rm-del-btn" onclick="deleteReward()" style="display:none">삭제</button>
+  </div>
+</div>
+
+<!-- 레벨업 팝업 -->
+<div class="levelup-pop" id="levelup-pop">
+  <div class="levelup-box">
+    <div class="levelup-emoji">🎉</div>
+    <div class="levelup-title" id="lup-title">레벨 업!</div>
+    <div class="levelup-sub" id="lup-sub"></div>
+    <button class="levelup-close" onclick="closeLevelUp()">확인</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SK='life_rpg_v5';
+
+// 스탯 설정
+const STATS=[
+  {key:'부',icon:'ti-coin',color:'#EF9F27',emoji:'💰'},
+  {key:'전문성',icon:'ti-building',color:'#378ADD',emoji:'🏠'},
+  {key:'영향력',icon:'ti-speakerphone',color:'#7F77DD',emoji:'📣'},
+  {key:'바이탈',icon:'ti-run',color:'#1D9E75',emoji:'💪'},
+  {key:'언어',icon:'ti-world',color:'#639922',emoji:'🌍'},
+  {key:'소셜',icon:'ti-heart',color:'#D4537E',emoji:'❤️'},
+];
+
+// 레벨 XP 기준 (스탯별 동일)
+const LV_THRESHOLDS=[0,100,250,500,900,1400,2000];
+const LV_NAMES=['','Lv.1 입문','Lv.2 성장','Lv.3 도약','Lv.4 전문','Lv.5 마스터','Lv.6 전설'];
+
+function getLv(xp){
+  let lv=1;
+  for(let i=1;i<LV_THRESHOLDS.length;i++){if(xp>=LV_THRESHOLDS[i])lv=i+1;else break;}
+  return Math.min(lv,LV_THRESHOLDS.length);
+}
+function getLvProgress(xp){
+  const lv=getLv(xp);
+  const cur=LV_THRESHOLDS[lv-1];
+  const next=LV_THRESHOLDS[lv]||LV_THRESHOLDS[lv-1]+999;
+  const pct=Math.min(Math.round((xp-cur)/(next-cur)*100),100);
+  return{lv,cur,next,pct,xpInLv:xp-cur,needed:next-cur};
+}
+
+const DEFAULT_DAILY=[
+  {id:'d1',label:'멜론버그 및 부동산 책',xp:5,stat:'전문성'},
+  {id:'d2',label:'콘텐츠 아이디어 1개 기록',xp:5,stat:'영향력'},
+  {id:'d3',label:'영어회화 및 일기',xp:5,stat:'언어'},
+  {id:'d4',label:'증시 및 지출 확인',xp:5,stat:'부'},
+  {id:'d5',label:'운동(러닝,골프,웨이트)',xp:10,stat:'바이탈'},
+];
+const DEFAULT_WEEKLY=[
+  {id:'w1',label:'블로그 포스팅 1건 작성',xp:20,stat:'영향력'},
+  {id:'w2',label:'유튜브 쇼츠 1개 업로드',xp:30,stat:'영향력'},
+  {id:'w3',label:'재무 모델링 강의',xp:20,stat:'전문성'},
+  {id:'w4',label:'새로운 도전',xp:20,stat:'소셜'},
+];
+const DEFAULT_REWARDS=[
+  {id:'r1',xp:100,label:'이쁜 옷사기 👗'},
+  {id:'r2',xp:300,label:'메이크업 강의 등록 💄'},
+  {id:'r3',xp:500,label:'호캉스 가기 🏨'},
+];
+
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function weekStr(){const d=new Date();const day=d.getDay()||7;d.setDate(d.getDate()-day+1);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function uid(){return 'q'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
+function save(){try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}}
+function load(){try{const r=localStorage.getItem(SK);if(r)return JSON.parse(r);}catch(e){}return null;}
+
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calSelected=null;
+let S;
+(function init(){
+  let saved=load();
+  if(!saved){
+    S={
+      statXP:{부:0,전문성:0,영향력:0,바이탈:0,언어:0,소셜:0},
+      totalXP:0,
+      daily:{date:'',done:{}},
+      weekly:{week:'',done:{}},
+      dailyQuests:DEFAULT_DAILY,
+      weeklyQuests:DEFAULT_WEEKLY,
+      rewards:DEFAULT_REWARDS,
+      history:[],
+      claimedRewards:{},
+    };
+  } else {
+    S=saved;
+    if(!S.statXP)S.statXP={부:0,전문성:0,영향력:0,바이탈:0,언어:0,소셜:0};
+    if(!S.dailyQuests)S.dailyQuests=DEFAULT_DAILY;
+    if(!S.weeklyQuests)S.weeklyQuests=DEFAULT_WEEKLY;
+    if(!S.rewards)S.rewards=DEFAULT_REWARDS;
+    if(!S.claimedRewards)S.claimedRewards={};
+    if(S.totalXP===undefined)S.totalXP=0;
+  }
+  // 데일리 리셋
+  const today=todayStr();
+  if(S.daily.date!==today){
+    if(S.daily.date&&Object.keys(S.daily.done).length>0){
+      const doneLabels=S.dailyQuests.filter(q=>S.daily.done[q.id]).map(q=>q.label);
+      const weekDoneLabels=S.weeklyQuests.filter(q=>S.weekly.done[q.id]).map(q=>q.label);
+      // 날짜별 기록이 이미 있으면 합치기, 없으면 새로 추가
+      const existing=S.history.find(h=>h.date===S.daily.date);
+      if(existing){existing.daily=doneLabels;if(weekDoneLabels.length)existing.weekly=weekDoneLabels;}
+      else{S.history.unshift({date:S.daily.date,daily:doneLabels,weekly:weekDoneLabels});}
+    }
+    S.daily={date:today,done:{}};
+  }
+  // 주간 리셋
+  const week=weekStr();
+  if(S.weekly.week!==week){
+    S.weekly={week,done:{}};
+  }
+  if(S.history.length>120)S.history=S.history.slice(0,120);
+  save();render();
+})();
+
+function render(){rHome();rDaily();rWeekly();rReward();rHistory();}
+
+/* 홈 */
+function rHome(){
+  document.getElementById('h-total-xp').innerHTML='총 XP<br><span style="font-size:16px">'+S.totalXP+'</span>';
+  const mp=Math.min(Math.round(S.totalXP/5000*100),100);
+  document.getElementById('h-main-bar').style.width=mp+'%';
+  document.getElementById('h-main-pct').textContent=mp+'%';
+
+  // 스탯 레벨 그리드
+  const sg=document.getElementById('home-stat-grid');sg.innerHTML='';
+  STATS.forEach(st=>{
+    const xp=S.statXP[st.key]||0;
+    const{lv,pct,xpInLv,needed}=getLvProgress(xp);
+    const div=document.createElement('div');div.className='stat-lv-card';
+    div.innerHTML=
+      '<div class="slc-top">'+
+        '<span class="slc-name">'+st.emoji+' '+st.key+'</span>'+
+        '<span class="slc-lv" style="background:'+st.color+'22;color:'+st.color+'">Lv.'+lv+'</span>'+
+      '</div>'+
+      '<div class="slc-xp">'+xpInLv+' / '+needed+' XP</div>'+
+      '<div class="slc-bar"><div class="slc-bar-fill" style="width:'+pct+'%;background:'+st.color+'"></div></div>';
+    sg.appendChild(div);
+  });
+
+  // 데일리 요약
+  const dw=document.getElementById('home-daily-wrap');dw.innerHTML='';
+  S.dailyQuests.forEach(q=>{
+    const done=!!S.daily.done[q.id];
+    const el=document.createElement('div');
+    el.style.cssText='font-size:12px;padding:5px 10px;border-radius:99px;border:1.5px solid '+(done?'#5DCAA5':'#e8e6e0')+';background:'+(done?'#E1F5EE':'transparent')+';color:'+(done?'#04342C':'#888');
+    el.textContent=(done?'✓ ':'')+q.label;
+    dw.appendChild(el);
+  });
+
+  // 다음 보상
+  const nr=document.getElementById('home-next-reward');nr.innerHTML='';
+  const sorted=[...S.rewards].sort((a,b)=>a.xp-b.xp);
+  const next=sorted.find(r=>S.totalXP<r.xp);
+  if(next){
+    const pct=Math.min(Math.round(S.totalXP/next.xp*100),100);
+    const div=document.createElement('div');div.className='card';
+    div.innerHTML=
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">'+
+        '<span style="font-size:13px;font-weight:600">'+next.label+'</span>'+
+        '<span style="font-size:12px;color:#534AB7;font-weight:600">'+S.totalXP+' / '+next.xp+' XP</span>'+
+      '</div>'+
+      '<div class="bar"><div class="bar-fill" style="width:'+pct+'%;background:#534AB7"></div></div>';
+    nr.appendChild(div);
+  } else {
+    nr.innerHTML='<div class="card" style="text-align:center;color:#1D9E75;font-weight:600">🎉 모든 보상 달성!</div>';
+  }
+}
+
+/* 데일리 */
+function rDaily(){
+  const today=new Date(),days=['일','월','화','수','목','금','토'];
+  document.getElementById('daily-date-label').textContent=today.getFullYear()+'년 '+(today.getMonth()+1)+'월 '+today.getDate()+'일 ('+days[today.getDay()]+')';
+  const earned=S.dailyQuests.filter(q=>S.daily.done[q.id]).reduce((a,q)=>a+q.xp,0);
+  const total=S.dailyQuests.reduce((a,q)=>a+q.xp,0);
+  const cnt=Object.keys(S.daily.done).length;
+  document.getElementById('daily-xp-today').textContent=earned+' / '+total+' XP 획득';
+  document.getElementById('daily-count').textContent=cnt+' / '+S.dailyQuests.length;
+  const list=document.getElementById('daily-list');list.innerHTML='';
+  S.dailyQuests.forEach(q=>{
+    const done=!!S.daily.done[q.id];
+    const st=STATS.find(s=>s.key===q.stat)||{color:'#888',emoji:''};
+    const row=document.createElement('div');
+    row.className='quest-row'+(done?' done':'');
+    row.innerHTML=
+      '<div class="sq'+(done?' on':'')+'"><i class="ti ti-check" style="font-size:12px;color:white;display:'+(done?'block':'none')+'"></i></div>'+
+      '<span class="quest-lbl">'+q.label+'</span>'+
+      '<span class="quest-stat-tag" style="background:'+st.color+'22;color:'+st.color+'">'+st.emoji+' '+q.stat+'</span>'+
+      '<span class="quest-xp">+'+q.xp+'</span>'+
+      '<button class="edit-btn" onclick="event.stopPropagation();openQuestModal(\'daily\',\''+q.id+'\')"><i class="ti ti-pencil" style="font-size:15px"></i></button>';
+    row.onclick=function(e){if(!e.target.closest('.edit-btn'))toggleQuest('daily',q.id,q.xp,q.stat);};
+    list.appendChild(row);
+  });
+}
+
+/* 주간 */
+function rWeekly(){
+  const week=weekStr();
+  const d=new Date(week);
+  const end=new Date(d);end.setDate(d.getDate()+6);
+  document.getElementById('weekly-period-label').textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일 ~ '+(end.getMonth()+1)+'월 '+end.getDate()+'일';
+  const earned=S.weeklyQuests.filter(q=>S.weekly.done[q.id]).reduce((a,q)=>a+q.xp,0);
+  document.getElementById('weekly-xp-info').textContent='주간 XP '+earned+' 획득';
+  const list=document.getElementById('weekly-list');list.innerHTML='';
+  S.weeklyQuests.forEach(q=>{
+    const done=!!S.weekly.done[q.id];
+    const st=STATS.find(s=>s.key===q.stat)||{color:'#888',emoji:''};
+    const div=document.createElement('div');div.className='weekly-card'+(done?' done':'');
+    div.style.opacity=done?'0.6':'1';
+    div.innerHTML=
+      '<div class="wc-top">'+
+        '<span class="wc-title"'+(done?' style="text-decoration:line-through;color:#bbb"':'')+'>'+q.label+'</span>'+
+        '<div class="wc-circle'+(done?' on':'')+'" onclick="toggleQuest(\'weekly\',\''+q.id+'\','+q.xp+',\''+q.stat+'\')">'+
+          '<i class="ti ti-check" style="font-size:12px;color:white;display:'+(done?'block':'none')+'"></i>'+
+        '</div>'+
+      '</div>'+
+      '<div class="wc-meta">'+
+        '<span class="quest-stat-tag" style="background:'+st.color+'22;color:'+st.color+'">'+st.emoji+' '+q.stat+'</span>'+
+        '<span class="wc-xp">+'+q.xp+' XP</span>'+
+      '</div>'+
+      '<div class="wc-actions">'+
+        '<button class="wc-act" onclick="toggleQuest(\'weekly\',\''+q.id+'\','+q.xp+',\''+q.stat+'\')">'+
+          '<i class="ti ti-check" style="font-size:13px"></i>'+(done?'취소':'완료')+
+        '</button>'+
+        '<button class="wc-act" onclick="openQuestModal(\'weekly\',\''+q.id+'\')"><i class="ti ti-pencil" style="font-size:13px"></i>수정</button>'+
+        '<button class="wc-act del" onclick="deleteQuestItem(\'weekly\',\''+q.id+'\')"><i class="ti ti-trash" style="font-size:13px"></i>삭제</button>'+
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+/* 보상 */
+function rReward(){
+  document.getElementById('reward-total-xp').textContent=S.totalXP+' XP';
+  const list=document.getElementById('reward-list');list.innerHTML='';
+  const sorted=[...S.rewards].sort((a,b)=>a.xp-b.xp);
+  sorted.forEach((r,i)=>{
+    const unlocked=S.totalXP>=r.xp;
+    const prevUnlocked=i===0||S.totalXP>=sorted[i-1].xp;
+    const isNext=!unlocked&&prevUnlocked;
+    const div=document.createElement('div');
+    div.className='reward-item'+(unlocked?' reward-unlocked':isNext?' reward-next':'');
+    div.innerHTML=
+      '<span class="reward-xp">'+r.xp+' XP</span>'+
+      '<span class="reward-label">'+r.label+'</span>'+
+      (unlocked?'<span class="reward-check"><i class="ti ti-check"></i></span>':'')+
+      '<button class="reward-edit-btn" onclick="openRewardModal(\''+r.id+'\')"><i class="ti ti-pencil" style="font-size:15px"></i></button>'+
+      '<button class="reward-del-btn" onclick="deleteRewardItem(\''+r.id+'\')"><i class="ti ti-trash" style="font-size:15px"></i></button>';
+    list.appendChild(div);
+  });
+}
+
+/* 기록 - 캘린더 */
+
+function getRecordMap(){
+  const map={};
+  // 오늘 실시간
+  const td=todayStr();
+  const todayD=S.dailyQuests.filter(q=>S.daily.done[q.id]).map(q=>q.label);
+  const todayW=S.weeklyQuests.filter(q=>S.weekly.done[q.id]).map(q=>q.label);
+  if(todayD.length||todayW.length) map[td]={daily:todayD,weekly:todayW};
+  // 과거
+  S.history.forEach(h=>{if(h.date&&(h.daily||h.weekly))map[h.date]={daily:h.daily||[],weekly:h.weekly||[]};});
+  return map;
+}
+
+function rHistory(){
+  const map=getRecordMap();
+  const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('cal-title').textContent=calYear+'년 '+months[calMonth];
+  const grid=document.getElementById('cal-grid');grid.innerHTML='';
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date(),ty=today.getFullYear(),tm=today.getMonth(),td2=today.getDate();
+  // 빈 칸
+  for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+  // 날짜
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=calYear+'-'+(calMonth+1)+'-'+d;
+    const rec=map[dateStr];
+    const isToday=calYear===ty&&calMonth===tm&&d===td2;
+    const isSel=calSelected===dateStr;
+    const btn=document.createElement('button');
+    btn.className='cal-day'+(isToday?' today':'')+(isSel?' selected':'');
+    btn.innerHTML='<span>'+d+'</span>';
+    if(rec){
+      const hasDail=rec.daily&&rec.daily.length;
+      const hasWeek=rec.weekly&&rec.weekly.length;
+      if(hasDail){const dot=document.createElement('div');dot.className='cal-dot';btn.appendChild(dot);}
+      if(hasWeek){const dot=document.createElement('div');dot.className='cal-dot weekly';btn.appendChild(dot);}
+    }
+    btn.onclick=()=>{calSelected=isSel?null:dateStr;rHistory();};
+    grid.appendChild(btn);
+  }
+  // 상세
+  const detail=document.getElementById('cal-detail');detail.innerHTML='';
+  if(calSelected){
+    const rec=map[calSelected];
+    if(rec&&((rec.daily&&rec.daily.length)||(rec.weekly&&rec.weekly.length))){
+      const [y,m,d]=calSelected.split('-');
+      const div=document.createElement('div');div.className='hist-item';
+      let html='<div style="font-size:13px;font-weight:600;margin-bottom:10px">'+m+'월 '+d+'일</div>';
+      if(rec.daily&&rec.daily.length){
+        html+='<div style="font-size:11px;color:#888;margin-bottom:6px">데일리</div>';
+        html+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">';
+        rec.daily.forEach(l=>{html+='<span style="font-size:12px;padding:4px 10px;border-radius:99px;background:#E1F5EE;color:#04342C">✓ '+l+'</span>';});
+        html+='</div>';
+      }
+      if(rec.weekly&&rec.weekly.length){
+        html+='<div style="font-size:11px;color:#888;margin-bottom:6px">주간</div>';
+        html+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
+        rec.weekly.forEach(l=>{html+='<span style="font-size:12px;padding:4px 10px;border-radius:99px;background:#EEEDFE;color:#3C3489">✓ '+l+'</span>';});
+        html+='</div>';
+      }
+      div.innerHTML=html;detail.appendChild(div);
+    } else {
+      detail.innerHTML='<div style="font-size:13px;color:#aaa;text-align:center;padding:1.5rem">이 날은 기록이 없어요</div>';
+    }
+  } else {
+    // 이번 달 요약
+    let total=0;Object.keys(map).forEach(k=>{const[y,m]=k.split('-');if(parseInt(y)===calYear&&parseInt(m)-1===calMonth)total++;});
+    if(total>0)detail.innerHTML='<div style="font-size:13px;color:#888;text-align:center;padding:1rem">이번 달 <b style="color:#534AB7">'+total+'일</b> 퀘스트 완료 · 날짜를 눌러 확인</div>';
+    else detail.innerHTML='<div style="font-size:13px;color:#aaa;text-align:center;padding:1rem">날짜를 눌러 기록을 확인하세요</div>';
+  }
+}
+
+function calMove(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  calSelected=null;
+  rHistory();
+}
+
+/* 퀘스트 토글 */
+function toggleQuest(type, id, xp, stat){
+  const store=type==='daily'?S.daily:S.weekly;
+  const done=!!store.done[id];
+  const prevLv=stat?getLv(S.statXP[stat]||0):0;
+  if(!done){
+    store.done[id]=true;
+    S.totalXP+=xp;
+    if(stat&&S.statXP[stat]!==undefined)S.statXP[stat]=(S.statXP[stat]||0)+xp;
+    toast('+'+xp+' XP 획득! 🎉');
+    // 레벨업 체크
+    if(stat){
+      const newLv=getLv(S.statXP[stat]);
+      if(newLv>prevLv)showLevelUp(stat,newLv);
+    }
+    // 보상 체크
+    checkRewards(S.totalXP-xp,S.totalXP);
+  } else {
+    delete store.done[id];
+    S.totalXP=Math.max(0,S.totalXP-xp);
+    if(stat&&S.statXP[stat]!==undefined)S.statXP[stat]=Math.max(0,(S.statXP[stat]||0)-xp);
+  }
+  save();render();
+}
+
+function checkRewards(prevXP,newXP){
+  S.rewards.forEach(r=>{
+    if(prevXP<r.xp&&newXP>=r.xp&&!S.claimedRewards[r.id]){
+      S.claimedRewards[r.id]=true;
+      setTimeout(()=>{
+        document.getElementById('lup-title').textContent='보상 달성!';
+        document.getElementById('lup-sub').textContent=r.xp+' XP 달성 — '+r.label;
+        document.querySelector('.levelup-emoji').textContent='🎁';
+        document.getElementById('levelup-pop').classList.add('show');
+      },500);
+    }
+  });
+}
+
+function showLevelUp(stat,lv){
+  const st=STATS.find(s=>s.key===stat);
+  document.querySelector('.levelup-emoji').textContent=st?st.emoji:'⭐';
+  document.getElementById('lup-title').textContent=stat+' 레벨 업!';
+  document.getElementById('lup-sub').textContent=LV_NAMES[lv-1]||'Lv.'+lv+' 달성';
+  document.getElementById('levelup-pop').classList.add('show');
+}
+function closeLevelUp(){document.getElementById('levelup-pop').classList.remove('show');}
+
+/* 퀘스트 모달 */
+let _qType=null,_qEditId=null;
+function openQuestModal(type,editId){
+  _qType=type;_qEditId=editId||null;
+  const quests=type==='daily'?S.dailyQuests:S.weeklyQuests;
+  const q=editId?quests.find(q=>q.id===editId):null;
+  document.getElementById('qm-title').textContent=(editId?'퀘스트 수정':type==='daily'?'데일리 퀘스트 추가':'주간 퀘스트 추가');
+  document.getElementById('qm-label').value=q?q.label:'';
+  document.getElementById('qm-xp').value=q?q.xp:'';
+  document.getElementById('qm-stat').value=q?q.stat:'전문성';
+  document.getElementById('qm-del-btn').style.display=editId?'block':'none';
+  openModal('quest-modal');
+}
+function confirmQuestModal(){
+  const label=document.getElementById('qm-label').value.trim();
+  const xp=parseInt(document.getElementById('qm-xp').value)||10;
+  const stat=document.getElementById('qm-stat').value;
+  if(!label){alert('퀘스트 이름을 입력해주세요');return;}
+  const quests=_qType==='daily'?S.dailyQuests:S.weeklyQuests;
+  if(_qEditId){const q=quests.find(q=>q.id===_qEditId);if(q){q.label=label;q.xp=xp;q.stat=stat;}}
+  else{quests.push({id:uid(),label,xp,stat});}
+  save();render();closeModal('quest-modal');toast(_qEditId?'수정 완료!':'퀘스트 추가!');
+}
+function deleteQuest(){
+  if(!confirm('삭제할까요?'))return;
+  deleteQuestItem(_qType,_qEditId);
+  closeModal('quest-modal');
+}
+function deleteQuestItem(type,id){
+  if(type==='daily'){S.dailyQuests=S.dailyQuests.filter(q=>q.id!==id);delete S.daily.done[id];}
+  else{S.weeklyQuests=S.weeklyQuests.filter(q=>q.id!==id);delete S.weekly.done[id];}
+  save();render();toast('삭제됨');
+}
+
+/* 보상 모달 */
+let _rEditId=null;
+function openRewardModal(editId){
+  _rEditId=editId||null;
+  const r=editId?S.rewards.find(r=>r.id===editId):null;
+  document.getElementById('rm-title').textContent=editId?'보상 수정':'보상 추가';
+  document.getElementById('rm-xp').value=r?r.xp:'';
+  document.getElementById('rm-label').value=r?r.label:'';
+  document.getElementById('rm-del-btn').style.display=editId?'block':'none';
+  openModal('reward-modal-bg');
+}
+function confirmRewardModal(){
+  const xp=parseInt(document.getElementById('rm-xp').value);
+  const label=document.getElementById('rm-label').value.trim();
+  if(!xp||!label){alert('XP와 보상 내용을 입력해주세요');return;}
+  if(_rEditId){const r=S.rewards.find(r=>r.id===_rEditId);if(r){r.xp=xp;r.label=label;}}
+  else{S.rewards.push({id:uid(),xp,label});}
+  save();render();closeModal('reward-modal-bg');toast(_rEditId?'보상 수정 완료!':'보상 추가!');
+}
+function deleteReward(){
+  if(!confirm('삭제할까요?'))return;
+  deleteRewardItem(_rEditId);
+  closeModal('reward-modal-bg');
+}
+function deleteRewardItem(id){
+  S.rewards=S.rewards.filter(r=>r.id!==id);
+  save();render();toast('삭제됨');
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-backdrop').forEach(el=>{
+  el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+function show(name,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  btn.classList.add('active');window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
