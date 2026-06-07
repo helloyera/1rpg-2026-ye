@@ -523,13 +523,27 @@ function rReward(){
 
 function getRecordMap(){
   const map={};
-  // 오늘 실시간
   const td=todayStr();
+  // 오늘 데일리 실시간
   const todayD=S.dailyQuests.filter(q=>S.daily.done[q.id]).map(q=>q.label);
-  const todayW=S.weeklyQuests.filter(q=>S.weekly.done[q.id]).map(q=>q.label);
-  if(todayD.length||todayW.length) map[td]={daily:todayD,weekly:todayW};
-  // 과거
-  S.history.forEach(h=>{if(h.date&&(h.daily||h.weekly))map[h.date]={daily:h.daily||[],weekly:h.weekly||[]};});
+  if(todayD.length){if(!map[td])map[td]={daily:[],weekly:[]};map[td].daily=todayD;}
+  // 주간: 완료한 날짜별로 분배
+  S.weeklyQuests.forEach(q=>{
+    const doneVal=S.weekly.done[q.id];
+    if(doneVal){
+      const dateKey=typeof doneVal==='string'?doneVal:td;
+      if(!map[dateKey])map[dateKey]={daily:[],weekly:[]};
+      map[dateKey].weekly.push(q.label);
+    }
+  });
+  // 과거 기록
+  S.history.forEach(h=>{
+    if(h.date&&(h.daily||h.weekly)){
+      if(!map[h.date])map[h.date]={daily:[],weekly:[]};
+      if(h.daily)map[h.date].daily=[...new Set([...map[h.date].daily,...h.daily])];
+      if(h.weekly)map[h.date].weekly=[...new Set([...map[h.date].weekly,...h.weekly])];
+    }
+  });
   return map;
 }
 
@@ -607,16 +621,15 @@ function toggleQuest(type, id, xp, stat){
   const done=!!store.done[id];
   const prevLv=stat?getLv(S.statXP[stat]||0):0;
   if(!done){
-    store.done[id]=true;
+    // 주간은 완료 날짜 기록, 데일리는 true
+    store.done[id]=type==='weekly'?todayStr():true;
     S.totalXP+=xp;
     if(stat&&S.statXP[stat]!==undefined)S.statXP[stat]=(S.statXP[stat]||0)+xp;
     toast('+'+xp+' XP 획득! 🎉');
-    // 레벨업 체크
     if(stat){
       const newLv=getLv(S.statXP[stat]);
       if(newLv>prevLv)showLevelUp(stat,newLv);
     }
-    // 보상 체크
     checkRewards(S.totalXP-xp,S.totalXP);
   } else {
     delete store.done[id];
